@@ -3,7 +3,7 @@ use jagua_rs::collision_detection::hazards::HazardEntity;
 use jagua_rs::entities::{Layout, PItemKey};
 use crate::consts::{GLS_WEIGHT_DECAY, GLS_WEIGHT_MAX_INC_RATIO, GLS_WEIGHT_MIN_INC_RATIO};
 use crate::quantify::pair_matrix::PairMatrix;
-use crate::quantify::{quantify_collision_poly_container, quantify_collision_poly_poly};
+use crate::quantify::{quantify_collision_poly_container_shape, quantify_collision_poly_poly};
 use crate::util::assertions::tracker_matches_layout;
 use ordered_float::Float;
 use slotmap::SecondaryMap;
@@ -73,7 +73,7 @@ impl CollisionTracker {
                     self.pair_collisions[(idx, idx_other)].loss = loss;
                 }
                 HazardEntity::Exterior => {
-                    let loss = quantify_collision_poly_container(shape, l.container.outer_cd.bbox);
+                    let loss = quantify_collision_poly_container_shape(shape, &l.container.outer_cd);
                     assert!(loss > 0.0, "loss for a collision should be > 0.0");
                     self.container_collisions[idx].loss = loss;
                 }

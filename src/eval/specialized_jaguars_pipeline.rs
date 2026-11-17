@@ -1,5 +1,5 @@
 use std::f32::consts::PI;
-use crate::quantify::quantify_collision_poly_container;
+use crate::quantify::quantify_collision_poly_container_shape;
 #[cfg(not(feature = "simd"))]
 use crate::quantify::quantify_collision_poly_poly;
 #[cfg(feature = "simd")]
@@ -168,7 +168,7 @@ impl<'a> SpecializedHazardCollector<'a> {
                 loss * weight
             }
             HazardEntity::Exterior => {
-                let loss = quantify_collision_poly_container(shape, self.layout.container.outer_cd.bbox);
+                let loss = quantify_collision_poly_container_shape(shape, &self.layout.container.outer_cd);
                 let weight = self.ct.get_container_weight(self.current_pk);
                 loss * weight
             }

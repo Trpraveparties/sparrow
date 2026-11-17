@@ -1,6 +1,6 @@
 use crate::eval::specialized_jaguars_pipeline::SpecializedHazardCollector;
 use crate::quantify::tracker::CollisionTracker;
-use crate::quantify::{quantify_collision_poly_container, quantify_collision_poly_poly};
+use crate::quantify::{quantify_collision_poly_container_shape, quantify_collision_poly_poly};
 use float_cmp::{approx_eq, assert_approx_eq};
 use itertools::Itertools;
 use jagua_rs::util::assertions;
@@ -118,7 +118,7 @@ pub fn tracker_matches_layout(ct: &CollisionTracker, l: &Layout) -> bool {
         }
         if collector.contains_entity(&HazardEntity::Exterior) {
             let stored_loss = ct.get_container_loss(pk1);
-            let calc_loss = quantify_collision_poly_container(&pi1.shape, l.container.outer_cd.bbox);
+            let calc_loss = quantify_collision_poly_container_shape(&pi1.shape, &l.container.outer_cd);
             assert_approx_eq!(f32, stored_loss, calc_loss, ulps = 5);
         } else {
             assert_eq!(ct.get_container_loss(pk1), 0.0);
