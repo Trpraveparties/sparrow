@@ -3,7 +3,7 @@ use jagua_rs::collision_detection::hazards::HazardEntity;
 use jagua_rs::entities::{Layout, PItemKey};
 use crate::consts::{GLS_WEIGHT_DECAY, GLS_WEIGHT_MAX_INC_RATIO, GLS_WEIGHT_MIN_INC_RATIO};
 use crate::quantify::pair_matrix::PairMatrix;
-use crate::quantify::{quantify_collision_poly_container_shape, quantify_collision_poly_poly};
+use crate::quantify::{container_hole, quantify_collision_poly_container_shape, quantify_collision_poly_hole, quantify_collision_poly_poly};
 use crate::util::assertions::tracker_matches_layout;
 use ordered_float::Float;
 use slotmap::SecondaryMap;
@@ -75,7 +75,13 @@ impl CollisionTracker {
                 HazardEntity::Exterior => {
                     let loss = quantify_collision_poly_container_shape(shape, &l.container.outer_cd);
                     assert!(loss > 0.0, "loss for a collision should be > 0.0");
-                    self.container_collisions[idx].loss = loss;
+                    // summed: an item can cross the edge and a hole at once
+                    self.container_collisions[idx].loss += loss;
+                }
+                HazardEntity::Hole { idx: hole_idx } => {
+                    let loss = quantify_collision_poly_hole(shape, container_hole(&l.container, *hole_idx));
+                    assert!(loss > 0.0, "loss for a collision should be > 0.0");
+                    self.container_collisions[idx].loss += loss;
                 }
                 _ => unimplemented!("unsupported hazard entity"),
             }

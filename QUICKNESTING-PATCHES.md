@@ -25,6 +25,10 @@ A rectangular sheet takes exactly the code path it took before.
   `outline: Option<&'static [Point]>` and `Strip::with_outline`. When an
   outline is set, the strip's container is that polygon whatever the width
   says. `Strip::new` leaves it `None`, so existing callers are unchanged.
+  `holes: Option<&'static [&'static [Point]]>` and `Strip::with_holes` add
+  the offcut's holes (parts already cut out of it) as the container's
+  quality-0 zone, which jagua-rs already treats as holes; they are inflated,
+  never shrunk, when simplified.
 
 ### sparrow
 
@@ -37,5 +41,11 @@ A rectangular sheet takes exactly the code path it took before.
 - `src/quantify/tracker.rs`, `src/eval/specialized_jaguars_pipeline.rs`,
   `src/util/assertions.rs`: call the new function with the container's shape
   instead of its bounding box.
+- Holes: `src/quantify/mod.rs` adds `quantify_collision_poly_hole` (the
+  mirror of the outline measure: how deep the item reaches into the hole,
+  plus hole corners inside the item) and `container_hole`. The tracker, the
+  specialized collector and the assertions handle `HazardEntity::Hole`
+  (previously `unimplemented!`), and the tracker sums an item's exterior and
+  hole losses into its container loss instead of keeping only the last one.
 
 The vendored copies leave out upstream's tests, benchmarks, data and images.

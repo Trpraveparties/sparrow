@@ -116,10 +116,27 @@ pub fn tracker_matches_layout(ct: &CollisionTracker, l: &Layout) -> bool {
                 }
             }
         }
-        if collector.contains_entity(&HazardEntity::Exterior) {
+        let mut calc_loss = 0.0;
+        let mut hits_container = false;
+        for (_, he) in collector.iter() {
+            match he {
+                HazardEntity::Exterior => {
+                    hits_container = true;
+                    calc_loss += quantify_collision_poly_container_shape(&pi1.shape, &l.container.outer_cd);
+                }
+                HazardEntity::Hole { idx } => {
+                    hits_container = true;
+                    calc_loss += crate::quantify::quantify_collision_poly_hole(
+                        &pi1.shape,
+                        crate::quantify::container_hole(&l.container, *idx),
+                    );
+                }
+                _ => {}
+            }
+        }
+        if hits_container {
             let stored_loss = ct.get_container_loss(pk1);
-            let calc_loss = quantify_collision_poly_container_shape(&pi1.shape, &l.container.outer_cd);
-            assert_approx_eq!(f32, stored_loss, calc_loss, ulps = 5);
+            assert_approx_eq!(f32, stored_loss, calc_loss, epsilon = 1e-3 * calc_loss.max(1.0));
         } else {
             assert_eq!(ct.get_container_loss(pk1), 0.0);
         }

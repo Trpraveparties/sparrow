@@ -88,6 +88,56 @@ fn quantify_collision_poly_outline(s: &SPolygon, c: &SPolygon) -> f32 {
     2.0 * outside.sqrt() * calc_shape_penalty(s, s)
 }
 
+/// The shape of hole `idx` of the container (patched for Quick Nesting: an
+/// offcut sheet can have holes where parts were already cut out).
+pub fn container_hole(c: &jagua_rs::entities::Container, idx: usize) -> &SPolygon {
+    c.quality_zones[0]
+        .as_ref()
+        .expect("a hole hazard needs the container's quality-0 zone")
+        .shapes_cd[idx]
+        .as_ref()
+}
+
+/// How far `s` reaches into the hole `h` of the container. The mirror of
+/// `quantify_collision_poly_outline`: each pole of `s` counts by how deep it
+/// crosses into the hole, each vertex of `s` inside the hole by its depth, and
+/// each corner of the hole inside `s` by its depth, so a part lying over a
+/// small hole still registers. Same floor and scale as the outline version.
+pub fn quantify_collision_poly_hole(s: &SPolygon, h: &SPolygon) -> f32 {
+    use jagua_rs::geometry::geo_traits::CollidesWith;
+    let s_bbox = s.bbox;
+    let edge_distance = |poly: &SPolygon, p: &jagua_rs::geometry::primitives::Point| -> f32 {
+        poly.edge_iter()
+            .map(|e| e.sq_distance_to(p))
+            .fold(f32::INFINITY, f32::min)
+            .sqrt()
+    };
+    let mut inside = 0.0001 * s_bbox.area();
+    if Rect::intersection(s_bbox, h.bbox).is_some() {
+        for pole in &s.surrogate().poles {
+            let d = edge_distance(h, &pole.center);
+            // signed: positive inside the hole
+            let signed = if h.collides_with(&pole.center) { d } else { -d };
+            let depth = (pole.radius + signed).clamp(0.0, 2.0 * pole.radius);
+            inside += 2.0 * depth * pole.radius;
+        }
+        for v in &s.vertices {
+            if h.collides_with(v) {
+                let d = edge_distance(h, v);
+                inside += d * d;
+            }
+        }
+        for v in &h.vertices {
+            if s.collides_with(v) {
+                let d = edge_distance(s, v);
+                inside += d * d;
+            }
+        }
+    }
+    debug_assert!(inside.is_normal());
+    2.0 * inside.sqrt() * calc_shape_penalty(s, s)
+}
+
 /// Quantifies a collision between a simple polygon and the exterior of the container.
 #[inline(always)]
 pub fn quantify_collision_poly_container(s: &SPolygon, c_bbox: Rect) -> f32 {
